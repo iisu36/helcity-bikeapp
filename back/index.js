@@ -3,6 +3,7 @@ const { GraphQLScalarType } = require('graphql')
 
 let trips = [
   {
+    id: 1,
     departure_time: new Date('2021-05-31T23:57:25'),
     return_time: new Date('2021-06-01T00:05:46'),
     departure_station_id: '094',
@@ -14,6 +15,7 @@ let trips = [
   },
 
   {
+    id: 12,
     departure_time: new Date('2021-05-31T23:56:59'),
     return_time: new Date('2021-06-01T00:07:14'),
     departure_station_id: '082',
@@ -25,6 +27,7 @@ let trips = [
   },
 
   {
+    id: 13,
     departure_time: new Date('2021-05-31T23:56:44'),
     return_time: new Date('2021-06-01T00:03:26'),
     departure_station_id: '123',
@@ -36,6 +39,7 @@ let trips = [
   },
 
   {
+    id: 14,
     departure_time: new Date('2021-05-31T23:56:23'),
     return_time: new Date('2021-06-01T00:29:58'),
     departure_station_id: '004',
@@ -47,6 +51,7 @@ let trips = [
   },
 
   {
+    id: 15,
     departure_time: new Date('2021-05-31T23:56:11'),
     return_time: new Date('2021-06-01T00:02:02'),
     departure_station_id: '004',
