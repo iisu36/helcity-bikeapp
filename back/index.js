@@ -1,7 +1,22 @@
+require('dotenv')
 const { ApolloServer, gql } = require('apollo-server')
 const { GraphQLScalarType } = require('graphql')
+const mongoose = require('mongoose')
+const Trip = require('./models/trip')
 
-let trips = [
+const MONGODB_LOCAL="mongodb://127.0.0.1:27017/helcity"
+// process.env.MONGODB_URI found in .env for remote database
+
+mongoose
+  .connect(MONGODB_LOCAL) // process.env.MONGODB_URI
+  .then(() => {
+    console.log('connected to MongoDB')
+  })
+  .catch((error) => {
+    console.log('error connection to MongoDB', error.message)
+  })
+
+/* let trips = [
   {
     id: 1,
     departure_time: new Date('2021-05-31T23:57:25'),
@@ -61,7 +76,7 @@ let trips = [
     distance_m: 1400,
     duration_s: 350,
   },
-]
+] */
 
 const typeDefs = gql`
   scalar Date
@@ -81,6 +96,12 @@ const typeDefs = gql`
   type Query {
     allTrips: [Trip!]!
   }
+
+  type Mutation {
+    addTrips(
+      trips: [Trip!]!
+    ): [Trip]
+  }
 `
 
 const resolvers = {
@@ -94,7 +115,21 @@ const resolvers = {
     },
   }),
   Query: {
-    allTrips: () => trips,
+    allTrips: async () => await Trip.find({}),
+  },
+  Mutation: {
+    addTrips: async (root, args) => {
+      let trips
+      try {
+        trips = await Trip.insertMany(args.trips)
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: args,
+        })
+      }
+
+      return trips
+    },
   },
 }
 
