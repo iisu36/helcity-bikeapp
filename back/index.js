@@ -81,6 +81,17 @@ mongoose
 const typeDefs = gql`
   scalar Date
 
+  input InputTrip {
+    departure_time: Date!
+    return_time: Date!
+    departure_station_id: String!
+    departure_station_name: String!
+    return_station_id: String!
+    return_station_name: String!
+    distance_m: Int!
+    duration_s: Int!
+  }
+
   type Trip {
     departure_time: Date!
     return_time: Date!
@@ -99,7 +110,7 @@ const typeDefs = gql`
 
   type Mutation {
     addTrips(
-      trips: [Trip!]!
+      trips: [InputTrip!]!
     ): [Trip]
   }
 `
