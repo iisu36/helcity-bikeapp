@@ -1,6 +1,5 @@
-require('dotenv')
-const { ApolloServer, gql } = require('apollo-server')
-const { GraphQLScalarType } = require('graphql')
+require('dotenv').config()
+const { ApolloServer, UserInputError, gql } = require('apollo-server')
 const mongoose = require('mongoose')
 const Trip = require('./models/trip')
 
@@ -16,130 +15,87 @@ mongoose
     console.log('error connection to MongoDB', error.message)
   })
 
-/* let trips = [
-  {
-    id: 1,
-    departure_time: new Date('2021-05-31T23:57:25'),
-    return_time: new Date('2021-06-01T00:05:46'),
-    departure_station_id: '094',
-    departure_station_name: 'Laajalahden aukio',
-    return_station_id: '100',
-    return_station_name: 'Teljäntie',
-    distance_m: 2043,
-    duration_s: 500,
-  },
-
-  {
-    id: 12,
-    departure_time: new Date('2021-05-31T23:56:59'),
-    return_time: new Date('2021-06-01T00:07:14'),
-    departure_station_id: '082',
-    departure_station_name: 'Töölöntulli',
-    return_station_id: '113',
-    return_station_name: 'Pasilan asema',
-    distance_m: 1870,
-    duration_s: 611,
-  },
-
-  {
-    id: 13,
-    departure_time: new Date('2021-05-31T23:56:44'),
-    return_time: new Date('2021-06-01T00:03:26'),
-    departure_station_id: '123',
-    departure_station_name: 'Näkinsilta',
-    return_station_id: '121',
-    return_station_name: 'Vilhonvuorenkatu',
-    distance_m: 1025,
-    duration_s: 399,
-  },
-
-  {
-    id: 14,
-    departure_time: new Date('2021-05-31T23:56:23'),
-    return_time: new Date('2021-06-01T00:29:58'),
-    departure_station_id: '004',
-    departure_station_name: 'Viiskulma',
-    return_station_id: '065',
-    return_station_name: 'Hernesaarenranta',
-    distance_m: 4318,
-    duration_s: 2009,
-  },
-
-  {
-    id: 15,
-    departure_time: new Date('2021-05-31T23:56:11'),
-    return_time: new Date('2021-06-01T00:02:02'),
-    departure_station_id: '004',
-    departure_station_name: 'Viiskulma',
-    return_station_id: '065',
-    return_station_name: 'Hernesaarenranta',
-    distance_m: 1400,
-    duration_s: 350,
-  },
-] */
-
 const typeDefs = gql`
-  scalar Date
-
   input InputTrip {
-    departure_time: Date!
-    return_time: Date!
+    departure_time: String!
+    return_time: String!
     departure_station_id: String!
     departure_station_name: String!
     return_station_id: String!
     return_station_name: String!
-    distance_m: Int!
-    duration_s: Int!
+    distance_m: String!
+    duration_s: String!
   }
 
   type Trip {
-    departure_time: Date!
-    return_time: Date!
+    departure_time: String!
+    return_time: String!
     departure_station_id: String!
     departure_station_name: String!
     return_station_id: String!
     return_station_name: String!
-    distance_m: Int!
-    duration_s: Int!
+    distance_m: String!
+    duration_s: String!
     id: ID!
   }
 
+  type FeedTrips {
+    trips: [Trip!]
+    cursor: Cursor
+  }
+
+  type Cursor {
+    next: String
+    sort: [String]
+    filter: [String]
+  }
+
+  input InputCursor {
+    next: String
+    sort: [String]
+    filter: [String]
+  }
+
   type Query {
-    allTrips: [Trip!]!
+    moreTrips(cursor: InputCursor, limit: Int): FeedTrips
   }
 
   type Mutation {
-    addTrips(
-      trips: [InputTrip!]!
-    ): [Trip]
+    addTrips(trips: [InputTrip!]!): [Trip]
   }
 `
 
 const resolvers = {
-  Date: new GraphQLScalarType({
-    name: 'Date',
-    parseValue(value) {
-      return new Date(value)
-    },
-    serialize(value) {
-      return value.toISOString()
-    },
-  }),
   Query: {
-    allTrips: async () => await Trip.find({}),
+    moreTrips: async (root, args) => {
+      let cursor = args.cursor
+      const limit = args.limit || 50
+      let trips
+      if (cursor) {
+        trips = await Trip.find({ _id: { $lt: cursor.next } })
+          .sort({ _id: -1 })
+          .limit(limit)
+          .exec()
+      } else {
+        cursor = {}
+        trips = await Trip.find({}).sort({ _id: -1 }).limit(limit).exec()
+      }
+
+      const next = trips[trips.length - 1]._id.toString()
+      cursor.next = next
+
+      return { trips, cursor }
+    },
   },
   Mutation: {
     addTrips: async (root, args) => {
-      let trips
       try {
-        trips = await Trip.insertMany(args.trips)
+        await Trip.insertMany(args.trips)
       } catch (error) {
         throw new UserInputError(error.message, {
           invalidArgs: args,
         })
       }
-
-      return trips
     },
   },
 }
